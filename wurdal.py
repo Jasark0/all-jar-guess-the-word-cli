@@ -243,17 +243,22 @@ def print_board(player):
             print_empty_board_line(count)
 
 def print_empty_board_line(count):
+    line = ""
+    spaces = ""
     for i in range(count):
-        print_empty_board_space()
-
-def print_empty_board_space():
-    print("*****  ")
-    print("*   *  ")
-    print("*****  ")
+        line += "*****  "
+        spaces += "*   *  "
+    print(line)
+    print(spaces)
+    print(line)
 
 def print_board_line(guess):
-    print("*****  *****  *****  *****  *****")
+    count = len(guess.guess)
+    line = ""
+    for i in range(count):
+        line += "*****  "  
     
+    print(line)
     guess_line = ""
     for i, c in enumerate(guess.guess):
         color = guess.colors[str(i)]
@@ -268,7 +273,7 @@ def print_board_line(guess):
         guess_line += " *  "
     print(guess_line)
 
-    print("*****  *****  *****  *****  *****")
+    print(line)
 
 def leaderboard(registered_players):
     sorted_players = player_sort(registered_players)
@@ -283,19 +288,14 @@ def main():
     args = parse_args()
 
     if args.command == 'register':
-        print('register')
         register(args.player_name, registered_players)
     elif args.command == 'new-game':
-        print('new-game')
         new_game(args.player_name, registered_players)
     elif args.command == 'guess':
-        print('guess')
         guess(args.player_name, args.word, registered_players)
     elif args.command == 'board':
-        print('board')
         print_board(find_player(args.player_name, registered_players)[1])
     elif args.command == 'leaderboard':
-        print('leaderboard')
         leaderboard(registered_players)
 
     write_players(registered_players)
