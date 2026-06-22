@@ -212,8 +212,6 @@ def parse_args():
 
 def load_players():
     try:
-        
-        
         json_data = ""
         with open("players.json", "r", encoding="utf-8") as f:
             json_data = f.read()
@@ -326,6 +324,10 @@ def select_word(player):
 
 
 def guess(player_name, guess_string, registered_players):
+    if not any(player.name == player_name for player in registered_players):
+        print("Error: player not found")
+        sys.exit(1)
+    
     idx, player = find_player(player_name, registered_players)
 
     # if game has not started yet
@@ -342,8 +344,12 @@ def guess(player_name, guess_string, registered_players):
 
     # guess validation
     guess_validation(guess_string, word)
+
+    guess_string = str.lower(guess_string)
+
     win = False
     lose = False
+    
     if guess_string == word:
         player.record.wins += 1
         player.record.guess_count += len(player.current_word.guesses) + 1
@@ -469,7 +475,7 @@ def leaderboard(registered_players):
     print("Leaderboard\n")
     sorted_players = player_sort(registered_players)
     if len(sorted_players) == 0 or sorted_players[0].record.wins == 0:
-        print("no wins yet.")
+        print("No wins yet.")
     else:
         for i, player in enumerate(sorted_players):
             print(f"{i + 1}. {player.name} - wins: {player.record.wins}")
