@@ -42,8 +42,6 @@ def create_player(
     
     player_name = player.name.replace(" ", "").lower()
     
-    print(player_name)
-    
     existing_player = db.query(Player).filter(Player.name == player_name).first()
     if existing_player:
         raise HTTPException(status_code=422, detail={"error": {"description": "Name must be unique"}})
