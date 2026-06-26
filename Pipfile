@@ -12,6 +12,7 @@ sqlalchemy = "*"
 psycopg = "*"
 alembic = "*"
 
+
 [dev-packages]
 pytest = "*"
 
