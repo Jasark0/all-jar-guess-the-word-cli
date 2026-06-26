@@ -1,37 +1,38 @@
 import sys
 import re
-from models import Player, Record
+import httpx
 
-def register(player_name: str, registered_players: list[Player]):
-    """
-    Checks if a valid player_name was given and registers a new player.
-
-    :param player_name: New unique player_name to be registered 
-    :param registered_players: a list of Player objects
-    """
-    player_name = str.lower(player_name)
+def register(player_name: str):
+    player_name = str.lower(player_name).strip()
     
-    # if player name is empty
-    if player_name == "":
-        print("Error: invalid player name")
+    try:
+        response = httpx.post(
+            "http://localhost:8000/players",
+            json={"name": player_name}
+        )
+        
+        if response.status_code == 201:
+            player_data = response.json()
+            print(f"May the odds be in your favor {player_data['name']}!")
+            # empty board, hook up to Jared's code later
+        elif response.status_code == 422:
+            error_detail = response.json()
+            error_msg = error_detail.get("detail", {}).get("error", {}).get("description", "Invalid player name")
+            
+            if error_msg == "Name must be unique":
+                print("That name is already taken. Please choose another.")
+            elif error_msg == "Name is required":
+                print("Name cannot be empty.")
+            elif error_msg == "Invalid player name":
+                print("Invalid player name. Please use only letters, numbers, underscores, or hyphens.")
+                
+            sys.exit(1)
+        else:
+            print(f"Failed to register player (status code: {response.status_code})")
+            sys.exit(1)
+    except httpx.ConnectError:
+        print("Looks like the wurdal servers are taking a loss... try again later!")
         sys.exit(1)
-
-    # if player already exists
-    if any(player.name == player_name for player in registered_players):
-        print("Error: player already exists")
+    except Exception as e:
+        print(f"Error: {str(e)}")
         sys.exit(1)
-
-    # if player name does not contain only letters, numbers, hyphens, and underscores
-    pattern = r"^[a-zA-Z0-9_-]+$"
-    if not re.match(pattern, player_name):
-        print("Error: invalid player name")
-        sys.exit(1)
-
-    player = Player(
-        name=player_name,
-        current_word_index=-1,
-        seen_words=[],
-        game_in_progress=False,
-        record=Record(wins=0, guess_count=0),
-    )
-    registered_players.append(player)

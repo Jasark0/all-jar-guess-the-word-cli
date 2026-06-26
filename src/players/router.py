@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+import re
+import sys
 
 from fastapi import APIRouter, Header, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -44,6 +46,11 @@ def create_player(
     if not player.name.strip():
         raise HTTPException(status_code=422, detail={"error": {"description": "Name is required"}})
     
+    pattern = r"^[a-zA-Z0-9_-]+$"
+    if not re.match(pattern, player.name):
+        raise HTTPException(status_code=422, detail={"error": {"description": "Invalid player name"}})
+        sys.exit(1)
+        
     player_name = player.name.replace(" ", "").lower()
     
     existing_player = db.query(Player).filter(Player.name == player_name).first()
