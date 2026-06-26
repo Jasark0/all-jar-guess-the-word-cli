@@ -114,7 +114,7 @@ async def get_player_board(
     authorization: str | None = Header(default=None),
     authentication: str | None = Header(default=None),
 ) -> dict[str, object]:
-    token = authorization or authentication
+    token = authorization
     if token != f"Bearer {id}":
         return access_denied_response()
 
