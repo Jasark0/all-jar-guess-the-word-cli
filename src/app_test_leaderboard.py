@@ -73,15 +73,17 @@ def _get(port, path):
     conn.request("GET", path)
     response = conn.getresponse()
     body = response.read()
+    headers = dict(response.getheaders())
     conn.close()
-    return response.status, json.loads(body)
+    return response.status, json.loads(body), headers
 
 
 def test_leaderboard_endpoint_returns_200(server, monkeypatch):
     monkeypatch.setattr("app.load_players", lambda: [])
-    status, body = _get(server, "/leaderboard")
+    status, body, headers = _get(server, "/leaderboard")
     assert status == 200
     assert body == {"players": []}
+    assert headers.get("Content-Type") == "application/json"
 
 
 def test_leaderboard_endpoint_returns_players(server, player_factory, monkeypatch):
@@ -91,7 +93,7 @@ def test_leaderboard_endpoint_returns_players(server, player_factory, monkeypatc
     ]
     monkeypatch.setattr("app.load_players", lambda: players)
 
-    status, body = _get(server, "/leaderboard")
+    status, body, _ = _get(server, "/leaderboard")
 
     assert status == 200
     assert body["players"][0]["name"] == "Alice"
