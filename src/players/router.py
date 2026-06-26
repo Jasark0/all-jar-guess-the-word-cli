@@ -1,10 +1,10 @@
-import json
-from pathlib import Path
+from enum import Enum
 
 from fastapi import APIRouter, Header, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import Session, relationship
+from sqlalchemy import Column, Enum as SAEnum, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import ARRAY
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
@@ -12,11 +12,77 @@ from ..core.database import create_database_session, Base
 
 app = APIRouter()
 
+
+class MatchValue(str, Enum):
+    full = "full"
+    partial = "partial"
+    none = "none"
+
+
+class GameStatus(str, Enum):
+    in_progress = "in-progress"
+    won = "won"
+    lost = "lost"
+
+
+class CurrentGame(Base):
+    __tablename__ = "current_games"
+
+    id = Column(Integer, primary_key=True)
+    secret_word = Column(String, nullable=False)
+    player_id = Column(Integer, ForeignKey("players.id"), nullable=False, unique=True)
+
+    guesses = relationship(
+        "GameGuess", back_populates="current_game", cascade="all, delete-orphan"
+    )
+    result = relationship(
+        "GameResult", back_populates="current_game", uselist=False, cascade="all, delete-orphan"
+    )
+    player = relationship("Player", back_populates="current_game", uselist=False)
+
+
+class GameGuess(Base):
+    __tablename__ = "game_guesses"
+
+    id = Column(Integer, primary_key=True)
+    current_game_id = Column(Integer, ForeignKey("current_games.id"), nullable=False)
+
+    current_game = relationship("CurrentGame", back_populates="guesses")
+    letters = relationship(
+        "GuessLetter", back_populates="guess", cascade="all, delete-orphan"
+    )
+
+
+class GuessLetter(Base):
+    __tablename__ = "guess_letters"
+
+    id = Column(Integer, primary_key=True)
+    guess_id = Column(Integer, ForeignKey("game_guesses.id"), nullable=False)
+    letter = Column(String(1), nullable=False)
+    match = Column(SAEnum(MatchValue), nullable=False)
+
+    guess = relationship("GameGuess", back_populates="letters")
+
+
+class GameResult(Base):
+    __tablename__ = "game_results"
+
+    id = Column(Integer, primary_key=True)
+    current_game_id = Column(Integer, ForeignKey("current_games.id"), nullable=False, unique=True)
+    status = Column(SAEnum(GameStatus), nullable=False)
+    word = Column(String, nullable=True)
+
+    current_game = relationship("CurrentGame", back_populates="result")
+
 class Player(Base):
     __tablename__ = "players"
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    seen_words = Column(ARRAY(String), nullable=False, default=list)
+
+    current_game = relationship("CurrentGame", back_populates="player", uselist=False)
+    
 
 class PlayerRegister(BaseModel):
     model_config = ConfigDict(
@@ -35,8 +101,52 @@ class PlayerRead(BaseModel):
 
     id: int
     name: str
+    current_game: "CurrentGameRead | None" = None
 
-@app.post("", response_model=PlayerRead, status_code=201)
+
+class PlayerIdentityRead(BaseModel):
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
+
+    id: int
+    name: str
+    seen_words: list[str]
+
+
+class LetterRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    letter: str
+    match: MatchValue
+
+
+class GuessRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    letters: list[LetterRead]
+
+
+class GameResultRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    status: GameStatus
+    word: str | None
+
+
+class CurrentGameRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)
+
+    secret_word: str
+    guesses: list[GuessRead]
+    result: GameResultRead | None = None
+
+
+PlayerRead.model_rebuild()
+
+@app.post("", response_model=PlayerIdentityRead, status_code=201)
 def create_player(
     player: PlayerRegister,
     db: Session = Depends(create_database_session)
@@ -50,14 +160,14 @@ def create_player(
     if existing_player:
         raise HTTPException(status_code=422, detail={"error": {"description": "Name must be unique"}})
 
-    db_player = Player(name=player_name)
+    db_player = Player(name=player_name, seen_words=[])
     db.add(db_player)
     db.commit()
     db.refresh(db_player)
 
     return db_player
 
-@app.post("/sessions", response_model=PlayerRead, status_code=200)
+@app.post("/sessions", response_model=PlayerIdentityRead, status_code=200)
 def get_player_by_id(
     player: PlayerRegister,
     db: Session = Depends(create_database_session)
@@ -72,8 +182,6 @@ def get_player_by_id(
         raise HTTPException(status_code=422, detail={"error": {"description": "Player not found"}})
     
     return existing_player
-    
-MOCK_DATA_PATH = Path(__file__).with_name("mock.json")
 
 
 def access_denied_response() -> JSONResponse:
@@ -83,58 +191,32 @@ def access_denied_response() -> JSONResponse:
     )
 
 
-def player_not_found_response(player_id: int) -> JSONResponse:
-    return JSONResponse(
-        status_code=404,
-        content={"error": {"description": f"Player {player_id} not found"}},
-    )
-
-
-def load_mock_players() -> list[dict[str, object]]:
-    with MOCK_DATA_PATH.open() as mock_file:
-        return json.load(mock_file)
-
-
-def find_player_board(player_id: int) -> dict[str, object] | None:
-    mock_players = load_mock_players()
-
-    for player in mock_players:
-        user = player.get("user", {})
-        if user.get("id") == player_id:
-            return player
-
-    return None
-
-
-def normalize_current_game(player_board: dict[str, object]) -> dict[str, object]:
-    current = player_board.get("current")
-    if not isinstance(current, dict):
-        return player_board
-
-    result = current.get("result")
-    if not isinstance(result, dict):
-        return player_board
-
-    status = result.get("status")
-    if status in {"won", "lost"}:
-        current["guesses"] = []
-        current["result"] = {"status": "in-progress", "word": None}
-
-    return player_board
-
-
 @app.get("/{id}/board")
 async def get_player_board(
     id: int,
     authorization: str | None = Header(default=None),
-    authentication: str | None = Header(default=None),
+    db: Session = Depends(create_database_session)
 ) -> dict[str, object]:
     token = authorization
     if token != f"Bearer {id}":
         return access_denied_response()
 
-    player_board = find_player_board(id)
-    if player_board is None:
-        return player_not_found_response(id)
+    existing_player = db.query(Player).filter(Player.id == id).first()
 
-    return normalize_current_game(player_board)
+    if not existing_player:
+        raise HTTPException(status_code=422, detail={"error": {"description": "Player not found"}})
+
+    current_game = existing_player.current_game
+    if current_game is None:
+        
+
+
+        return {
+            "user": {"id": existing_player.id, "name": existing_player.name},
+            "current": None,
+        }
+
+    return {
+        "user": {"id": existing_player.id, "name": existing_player.name},
+        "current": CurrentGameRead.model_validate(current_game).model_dump(by_alias=True),
+    }

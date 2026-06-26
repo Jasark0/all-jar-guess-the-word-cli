@@ -92,31 +92,3 @@ def print_board_line(guess: Guess):
         guess_line += print_color(color, " *  ")
     print(guess_line)
     print(line)
-
-
-
-
-    # def print_board(player: Player):
-#     """
-#     Validates the Player status and prints the game board.
-
-#     :param player: a Player object *
-#     """
-#     # if game has not started yet
-#     if not player.game_in_progress:
-#         print("Error: no active game")
-#         sys.exit(1)
-
-#     count = len(player.current_word.word)
-
-#     # if player has not made any guesses yet, print empty board
-#     if len(player.current_word.guesses) == 0:
-#         for i in range(6):
-#             print_empty_board_line(count)
-#     else:
-#         # print game with guesses
-#         for guess in player.current_word.guesses:
-#             print_board_line(guess)
-
-#         for i in range(6 - len(player.current_word.guesses)):
-#             print_empty_board_line(count)
