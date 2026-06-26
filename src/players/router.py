@@ -1,4 +1,6 @@
 from enum import Enum
+import random
+from pathlib import Path
 
 from fastapi import APIRouter, Header, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -23,6 +25,10 @@ class GameStatus(str, Enum):
     in_progress = "in-progress"
     won = "won"
     lost = "lost"
+
+
+def enum_values(enum_cls: type[Enum]) -> list[str]:
+    return [member.value for member in enum_cls]
 
 
 class CurrentGame(Base):
@@ -59,7 +65,10 @@ class GuessLetter(Base):
     id = Column(Integer, primary_key=True)
     guess_id = Column(Integer, ForeignKey("game_guesses.id"), nullable=False)
     letter = Column(String(1), nullable=False)
-    match = Column(SAEnum(MatchValue), nullable=False)
+    match = Column(
+        SAEnum(MatchValue, values_callable=enum_values),
+        nullable=False,
+    )
 
     guess = relationship("GameGuess", back_populates="letters")
 
@@ -69,7 +78,10 @@ class GameResult(Base):
 
     id = Column(Integer, primary_key=True)
     current_game_id = Column(Integer, ForeignKey("current_games.id"), nullable=False, unique=True)
-    status = Column(SAEnum(GameStatus), nullable=False)
+    status = Column(
+        SAEnum(GameStatus, values_callable=enum_values),
+        nullable=False,
+    )
     word = Column(String, nullable=True)
 
     current_game = relationship("CurrentGame", back_populates="result")
@@ -144,6 +156,28 @@ class CurrentGameRead(BaseModel):
     result: GameResultRead | None = None
 
 
+class CurrentBoardRead(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    length: int
+    guesses: list[GuessRead]
+    result: GameResultRead | None = None
+
+
+class UserBoardRead(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    id: int
+    name: str
+
+
+class PlayerBoardRead(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    user: UserBoardRead
+    current: CurrentBoardRead
+
+
 PlayerRead.model_rebuild()
 
 @app.post("", response_model=PlayerIdentityRead, status_code=201)
@@ -191,12 +225,45 @@ def access_denied_response() -> JSONResponse:
     )
 
 
+def create_current_game_for_player(player: Player, db: Session) -> CurrentGame:
+    words_path = Path(__file__).resolve().parent.parent / "word_list.txt"
+
+    with words_path.open() as words_file:
+        words = [line.strip().lower() for line in words_file if line.strip()]
+
+    seen_words = player.seen_words or []
+    unseen_words = [word for word in words if word not in seen_words]
+
+    if not unseen_words:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": {"description": "No words available"}},
+        )
+
+    selected_word = random.choice(unseen_words)
+    player.seen_words = [*seen_words, selected_word]
+
+    current_game = CurrentGame(secret_word=selected_word, player=player)
+    game_result = GameResult(
+        current_game=current_game,
+        status=GameStatus.in_progress,
+        word=None,
+    )
+
+    db.add(current_game)
+    db.add(game_result)
+    db.add(player)
+    db.commit()
+    db.refresh(current_game)
+    return current_game
+
+
 @app.get("/{id}/board")
 async def get_player_board(
     id: int,
     authorization: str | None = Header(default=None),
     db: Session = Depends(create_database_session)
-) -> dict[str, object]:
+) -> PlayerBoardRead:
     token = authorization
     if token != f"Bearer {id}":
         return access_denied_response()
@@ -208,15 +275,17 @@ async def get_player_board(
 
     current_game = existing_player.current_game
     if current_game is None:
-        
+        current_game = create_current_game_for_player(existing_player, db)
 
-
-        return {
-            "user": {"id": existing_player.id, "name": existing_player.name},
-            "current": None,
-        }
-
-    return {
-        "user": {"id": existing_player.id, "name": existing_player.name},
-        "current": CurrentGameRead.model_validate(current_game).model_dump(by_alias=True),
-    }
+    return PlayerBoardRead(
+        user=UserBoardRead(id=existing_player.id, name=existing_player.name),
+        current=CurrentBoardRead(
+            length=len(current_game.secret_word),
+            guesses=[GuessRead.model_validate(guess) for guess in current_game.guesses],
+            result=(
+                GameResultRead.model_validate(current_game.result)
+                if current_game.result is not None
+                else None
+            ),
+        ),
+    )
