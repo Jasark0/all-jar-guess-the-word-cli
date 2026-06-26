@@ -40,7 +40,9 @@ def create_player(
     if not player.name.strip():
         raise HTTPException(status_code=422, detail={"error": {"description": "Name is required"}})
     
-    player_name = player.name.strip().lower()
+    player_name = player.name.replace(" ", "").lower()
+    
+    print(player_name)
     
     existing_player = db.query(Player).filter(Player.name == player_name).first()
     if existing_player:
