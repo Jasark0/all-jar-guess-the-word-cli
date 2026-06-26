@@ -4,7 +4,7 @@
 
 python 3.14.6
 
-If ```pipenv``` shows not found run ```pyenv global 3.14.6``` to set your global python version to the correct one.
+If `pipenv` shows not found run `pyenv global 3.14.6` to set your global python version to the correct one.
 
 ## Dependency Installation and setup
 
@@ -19,5 +19,45 @@ Add this line to your ```~/.zshrc``` file.
 Then open a new terminal and you should be good to run the cmd.
 
 ## CLI run command
+
 cd into src of the project before running.
-```wurdal <cmd>```
+`wurdal <cmd>`
+
+## API Development Commands
+
+### Start the development server
+
+```bash
+pipenv run dev
+```
+
+Runs the FastAPI app with uvicorn on http://localhost:8000
+
+### Run database migrations
+
+```bash
+pipenv run alembic upgrade head
+```
+
+Apply pending database migrations
+
+### Create a new migration
+
+```bash
+pipenv run alembic revision --autogenerate -m "description"
+```
+
+Generate a new migration file based on model changes
+
+### Run tests
+
+```bash
+pipenv run pytest
+```
+
+Run your test suite
+
+### View API documentation
+
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
