@@ -14,7 +14,7 @@ def main():
     word_list = read_in_word_list()
 
     if args.command == "register":
-        register_service.register(args.player_name, registered_players)
+        register_service.register(args.player_name)
     elif args.command == "new-game":
         new_game_service.new_game(args.player_name, registered_players, word_list)
     elif args.command == "guess":
