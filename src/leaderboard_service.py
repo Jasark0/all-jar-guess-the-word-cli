@@ -24,8 +24,8 @@ def leaderboard(registered_players: list[Player]):
     """
     print("Leaderboard\n")
     sorted_players = player_sort(registered_players)
-    if len(sorted_players) == 0 or sorted_players[0].record.wins == 0:
-        print("No wins yet.")
+    if len(sorted_players) == 0:
+        print("No players registered yet.")
     else:
         for i, player in enumerate(sorted_players):
             print(f"{i + 1}. {player.name} - wins: {player.record.wins}")
