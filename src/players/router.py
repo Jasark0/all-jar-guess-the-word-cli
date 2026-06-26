@@ -216,6 +216,7 @@ def get_player_by_id(
         raise HTTPException(status_code=422, detail={"error": {"description": "Player not found"}})
     
     return existing_player
+    
 
 
 def access_denied_response() -> JSONResponse:
