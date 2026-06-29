@@ -5,13 +5,16 @@ from httpx import AsyncClient
 
 async def call_board_api(player_id: int):
     try:
+        if player_id is None:
+            print('Please login to continue')
+            sys.exit(2)
+
         async with AsyncClient() as client:
             response = await client.get(
                 f"http://localhost:8000/players/{player_id}/board",
                 headers={"Authorization": f"Bearer {player_id}"},
             )
         player = response.json()
-        print(player)
         guesses = GuessList.model_validate(player["current"]["guesses"]).root
 
         if len(guesses) == 0:

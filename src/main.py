@@ -14,3 +14,14 @@ def startup() -> None:
 
 
 app.include_router(players_router, prefix="/players", tags=["players"])
+
+
+@app.get("/")
+def get_links():
+    return {
+        "_links": {
+            "register": {"href": "/players"},
+            "login": {"href": "/sessions"},
+            "leaderboard": {"href": "/leaderboard"},
+        }
+    }

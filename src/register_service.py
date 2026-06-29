@@ -7,7 +7,9 @@ from session_service import save_player_session, load_player_session
 
 
 def print_board_from_response(board_payload: dict):
-    current = board_payload.get("current", {}) if isinstance(board_payload, dict) else {}
+    current = (
+        board_payload.get("current", {}) if isinstance(board_payload, dict) else {}
+    )
     length = current.get("length")
     guesses_payload = current.get("guesses", [])
 
@@ -35,13 +37,12 @@ def print_board_from_response(board_payload: dict):
 
 async def register(player_name: str):
     player_name = str.lower(player_name).strip()
-    
+
     try:
         response = httpx.post(
-            "http://localhost:8000/players",
-            json={"name": player_name}
+            "http://localhost:8000/players", json={"name": player_name}
         )
-        
+
         if response.status_code == 201:
             player_data = response.json()
             print(f"May the odds be in your favor {player_data['name']}!\n")
@@ -50,18 +51,24 @@ async def register(player_name: str):
             if isinstance(player_id, int):
                 save_player_session(player_id)
                 await board_service.call_board_api(load_player_session())
-                
+
         elif response.status_code == 422:
             error_detail = response.json()
-            error_msg = error_detail.get("detail", {}).get("error", {}).get("description", "Invalid player name")
-            
+            error_msg = (
+                error_detail.get("detail", {})
+                .get("error", {})
+                .get("description", "Invalid player name")
+            )
+
             if error_msg == "Name must be unique":
                 print("That name is already taken. Please choose another.")
             elif error_msg == "Name is required":
                 print("Name cannot be empty.")
             elif error_msg == "Invalid player name":
-                print("Invalid player name. Please use only letters, numbers, underscores, or hyphens.")
-                
+                print(
+                    "Invalid player name. Please use only letters, numbers, underscores, or hyphens."
+                )
+
             sys.exit(1)
         else:
             print(f"Failed to register player (status code: {response.status_code})")
