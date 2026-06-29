@@ -10,7 +10,7 @@ async def main():
     registered_players = load_players()
     # TODO: set up loading in user session and user session management in general
     args = parse_args()
-    
+
     if args.command == "register":
         # TODO: hook up register api so players can be registered to the database
         register_service.register(args.player_name, registered_players)
@@ -24,6 +24,7 @@ async def main():
         await board_service.call_board_api(1)
     elif args.command == "leaderboard":
         pass
+
 
 if __name__ == "__main__":
     raise SystemExit(asyncio.run(main()))

@@ -3,7 +3,7 @@ from models import Guess, GuessList
 from httpx import AsyncClient
 
 
-async def call_board_api(player_id: int): 
+async def call_board_api(player_id: int):
     try:
         async with AsyncClient() as client:
             response = await client.get(
@@ -23,10 +23,11 @@ async def call_board_api(player_id: int):
 
             for i in range(6 - len(guesses)):
                 print_empty_board_line(player["current"]["length"])
-        
+
     except ConnectionError:
-        print('Looks like the wurdal servers are taking a loss... try again later!')
+        print("Looks like the wurdal servers are taking a loss... try again later!")
         sys.exit(2)
+
 
 def print_empty_board_line(count: int):
     """
@@ -46,7 +47,7 @@ def print_empty_board_line(count: int):
 
 def print_color(color: str, to_print: str):
     """
-    Matches the given color to the ANSI color code and returns the string 
+    Matches the given color to the ANSI color code and returns the string
     with the color code.
 
     :param color: color for the given string *

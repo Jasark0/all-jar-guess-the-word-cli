@@ -1,7 +1,9 @@
 import sys
 from models import Player, Guess
+
 # from board_service import print_board
 from utils import player_to_list, find_player
+
 
 def guess(player_name: str, guess_string: str, registered_players: list[Player]):
     """
@@ -11,7 +13,7 @@ def guess(player_name: str, guess_string: str, registered_players: list[Player])
     :param guess_string: Word that the player has entered as a guess
     :param registered_players: a list of player objects
     """
-    
+
     if not any(player.name == player_name for player in registered_players):
         print("Error: player not found")
         sys.exit(1)
@@ -90,7 +92,7 @@ def guess_validation(guess_string: str, word: str):
     :param guess_string: Word that the player has entered as a guess
     :param word: the secret word that is to be guessed
     """
-    
+
     # checks the length of the guess
     if len(guess_string) < len(word) or len(guess_string) > len(word):
         print("Error: invalid guess")

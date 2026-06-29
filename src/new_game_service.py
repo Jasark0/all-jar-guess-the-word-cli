@@ -1,5 +1,6 @@
 import sys
 import random
+
 # from board_service import print_board
 from models import Player, Word
 from utils import player_to_list

@@ -42,7 +42,10 @@ class CurrentGame(Base):
         "GameGuess", back_populates="current_game", cascade="all, delete-orphan"
     )
     result = relationship(
-        "GameResult", back_populates="current_game", uselist=False, cascade="all, delete-orphan"
+        "GameResult",
+        back_populates="current_game",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
     player = relationship("Player", back_populates="current_game", uselist=False)
 
@@ -77,7 +80,9 @@ class GameResult(Base):
     __tablename__ = "game_results"
 
     id = Column(Integer, primary_key=True)
-    current_game_id = Column(Integer, ForeignKey("current_games.id"), nullable=False, unique=True)
+    current_game_id = Column(
+        Integer, ForeignKey("current_games.id"), nullable=False, unique=True
+    )
     status = Column(
         SAEnum(GameStatus, values_callable=enum_values),
         nullable=False,
@@ -85,6 +90,7 @@ class GameResult(Base):
     word = Column(String, nullable=True)
 
     current_game = relationship("CurrentGame", back_populates="result")
+
 
 class Player(Base):
     __tablename__ = "players"
@@ -94,7 +100,7 @@ class Player(Base):
     seen_words = Column(ARRAY(String), nullable=False, default=list)
 
     current_game = relationship("CurrentGame", back_populates="player", uselist=False)
-    
+
 
 class PlayerRegister(BaseModel):
     model_config = ConfigDict(
@@ -103,6 +109,7 @@ class PlayerRegister(BaseModel):
     )
 
     name: str
+
 
 class PlayerRead(BaseModel):
     model_config = ConfigDict(
@@ -149,7 +156,9 @@ class GameResultRead(BaseModel):
 
 
 class CurrentGameRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)
+    model_config = ConfigDict(
+        from_attributes=True, alias_generator=to_camel, populate_by_name=True
+    )
 
     secret_word: str
     guesses: list[GuessRead]
@@ -180,19 +189,23 @@ class PlayerBoardRead(BaseModel):
 
 PlayerRead.model_rebuild()
 
+
 @app.post("", response_model=PlayerIdentityRead, status_code=201)
 def create_player(
-    player: PlayerRegister,
-    db: Session = Depends(create_database_session)
+    player: PlayerRegister, db: Session = Depends(create_database_session)
 ):
     if not player.name.strip():
-        raise HTTPException(status_code=422, detail={"error": {"description": "Name is required"}})
-    
+        raise HTTPException(
+            status_code=422, detail={"error": {"description": "Name is required"}}
+        )
+
     player_name = player.name.replace(" ", "").lower()
-    
+
     existing_player = db.query(Player).filter(Player.name == player_name).first()
     if existing_player:
-        raise HTTPException(status_code=422, detail={"error": {"description": "Name must be unique"}})
+        raise HTTPException(
+            status_code=422, detail={"error": {"description": "Name must be unique"}}
+        )
 
     db_player = Player(name=player_name, seen_words=[])
     db.add(db_player)
@@ -201,22 +214,25 @@ def create_player(
 
     return db_player
 
+
 @app.post("/sessions", response_model=PlayerIdentityRead, status_code=200)
 def get_player_by_id(
-    player: PlayerRegister,
-    db: Session = Depends(create_database_session)
+    player: PlayerRegister, db: Session = Depends(create_database_session)
 ):
     if not player.name.strip():
-        raise HTTPException(status_code=422, detail={"error": {"description": "Name is required"}})
-    
+        raise HTTPException(
+            status_code=422, detail={"error": {"description": "Name is required"}}
+        )
+
     player_name = player.name.replace(" ", "").lower()
-    
+
     existing_player = db.query(Player).filter(Player.name == player_name).first()
     if not existing_player:
-        raise HTTPException(status_code=422, detail={"error": {"description": "Player not found"}})
-    
+        raise HTTPException(
+            status_code=422, detail={"error": {"description": "Player not found"}}
+        )
+
     return existing_player
-    
 
 
 def access_denied_response() -> JSONResponse:
@@ -263,7 +279,7 @@ def create_current_game_for_player(player: Player, db: Session) -> CurrentGame:
 async def get_player_board(
     id: int,
     authorization: str | None = Header(default=None),
-    db: Session = Depends(create_database_session)
+    db: Session = Depends(create_database_session),
 ) -> PlayerBoardRead:
     token = authorization
     if token != f"Bearer {id}":
@@ -272,7 +288,9 @@ async def get_player_board(
     existing_player = db.query(Player).filter(Player.id == id).first()
 
     if not existing_player:
-        raise HTTPException(status_code=422, detail={"error": {"description": "Player not found"}})
+        raise HTTPException(
+            status_code=422, detail={"error": {"description": "Player not found"}}
+        )
 
     current_game = existing_player.current_game
     if current_game is None:

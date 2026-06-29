@@ -11,6 +11,7 @@ uvicorn = "*"
 sqlalchemy = "*"
 psycopg = "*"
 alembic = "*"
+ruff = "*"
 
 [dev-packages]
 pytest = "*"
