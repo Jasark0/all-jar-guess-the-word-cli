@@ -50,7 +50,7 @@ async def login(player_name: str):
             if isinstance(player_id, int):
                 save_player_session(player_id)
                 await board_service.call_board_api(load_player_session())
-        elif response.status_code == 404:
+        elif response.status_code == 422:
             print(f"Could not find user {player_name}. Please register first with: wurdal register {player_name}")
         else:
             print(f"Failed to login player (status code: {response.status_code})")
