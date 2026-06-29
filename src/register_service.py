@@ -1,6 +1,36 @@
 import sys
 import httpx
-from session_service import save_player_session
+from board_service import print_board_line, print_empty_board_line
+from models import GuessList
+from session_service import save_player_session, load_player_session
+
+
+def print_board_from_response(board_payload: dict):
+    current = board_payload.get("current", {}) if isinstance(board_payload, dict) else {}
+    length = current.get("length")
+    guesses_payload = current.get("guesses", [])
+
+    if not isinstance(length, int) or length <= 0:
+        print("Unable to display board right now.")
+        return
+
+    try:
+        guesses = GuessList.model_validate(guesses_payload).root
+    except Exception:
+        print("Unable to display board right now.")
+        return
+
+    if len(guesses) == 0:
+        for _ in range(6):
+            print_empty_board_line(length)
+        return
+
+    for guess in guesses:
+        print_board_line(guess)
+
+    for _ in range(max(0, 6 - len(guesses))):
+        print_empty_board_line(length)
+
 
 def register(player_name: str):
     player_name = str.lower(player_name).strip()
@@ -13,18 +43,20 @@ def register(player_name: str):
         
         if response.status_code == 201:
             player_data = response.json()
-            print(f"May the odds be in your favor {player_data['name']}!")
+            print(f"May the odds be in your favor {player_data['name']}!\n")
 
             player_id = player_data.get("id")
             if isinstance(player_id, int):
                 save_player_session(player_id)
                 board_response = httpx.get(
                     f"http://localhost:8000/players/{player_id}/board",
-                    headers={"Authorization": f"Bearer {player_id}"},
+                    headers={"Authorization": f"Bearer {load_player_session()}"},
                 )
-
                 if board_response.status_code != 200:
                     print("Unable to load board right now.")
+                    return
+
+                print_board_from_response(board_response.json())
         elif response.status_code == 422:
             error_detail = response.json()
             error_msg = error_detail.get("detail", {}).get("error", {}).get("description", "Invalid player name")
