@@ -13,6 +13,7 @@ psycopg = "*"
 alembic = "*"
 ruff = "*"
 
+
 [dev-packages]
 pytest = "*"
 

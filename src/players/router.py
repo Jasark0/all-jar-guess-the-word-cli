@@ -33,6 +33,37 @@ def enum_values(enum_cls: type[Enum]) -> list[str]:
     return [member.value for member in enum_cls]
 
 
+def color_guess(guess: str, secret_word: str) -> dict[str, str]:
+    """
+    Color a guess using tally-based algorithm.
+    
+    :param guess: the guessed word
+    :param secret_word: the secret word
+    :return: dict mapping position indices to match values ("full", "partial", "none")
+    """
+    tally = {}
+    for c in secret_word:
+        tally[c] = tally.get(c, 0) + 1
+
+    matches = {}
+    # First pass: greens (full matches)
+    for i, char in enumerate(guess):
+        if char == secret_word[i]:
+            matches[i] = "full"
+            tally[char] -= 1
+
+    # Second pass: yellows and greys
+    for i, char in enumerate(guess):
+        if i not in matches:
+            if char in secret_word and tally.get(char, 0) > 0:
+                matches[i] = "partial"
+                tally[char] -= 1
+            else:
+                matches[i] = "none"
+
+    return matches
+
+
 class CurrentGame(Base):
     __tablename__ = "current_games"
 
@@ -111,6 +142,10 @@ class PlayerRegister(BaseModel):
     )
 
     name: str
+
+
+class GuessRequest(BaseModel):
+    guess: str
 
 
 class PlayerRead(BaseModel):
@@ -319,3 +354,101 @@ def get_player_board(
             ),
         ),
     )
+
+
+@app.post("/{id}/guess")
+def make_guess(
+    id: int,
+    guess_request: GuessRequest,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(create_database_session),
+):
+    """Submit a guess for the current game."""
+    # Validate authorization
+    if authorization != f"Bearer {id}":
+        raise HTTPException(status_code=403, detail={"error": {"description": "Access denied"}})
+
+    # Get player
+    existing_player = db.query(Player).filter(Player.id == id).first()
+    if not existing_player:
+        raise HTTPException(
+            status_code=422, detail={"error": {"description": "Player not found"}}
+        )
+
+    # Get or create current game
+    current_game = existing_player.current_game
+    if current_game is None:
+        current_game = create_current_game_for_player(existing_player, db)
+
+    # Validate guess length
+    guess_word = guess_request.guess.lower()
+    secret_word = current_game.secret_word
+    if len(guess_word) != len(secret_word):
+        raise HTTPException(
+            status_code=400,
+            detail={"error": f"Guess must be exactly {len(secret_word)} letters"},
+        )
+
+    # Validate guess contains only letters
+    if not guess_word.isalpha():
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "Guess must contain only letters"},
+        )
+
+    # Color the guess
+    matches = color_guess(guess_word, secret_word)
+    
+    # Create GameGuess and GuessLetters
+    game_guess = GameGuess(current_game_id=current_game.id)
+    db.add(game_guess)
+    db.flush()  # Flush to get the ID before adding letters
+
+    for i, letter in enumerate(guess_word):
+        match_value = matches[i]
+        guess_letter = GuessLetter(
+            guess_id=game_guess.id,
+            letter=letter,
+            match=MatchValue(match_value),
+        )
+        db.add(guess_letter)
+
+    db.flush()  # Flush to get letters
+    db.refresh(game_guess)
+
+    # Check if won or lost
+    won = guess_word == secret_word
+    guesses_count = len(current_game.guesses) + 1  # Include current guess
+    lost = guesses_count >= 6 and not won
+
+    # Update game result if game ended
+    if won or lost:
+        current_game.result.status = GameStatus.won if won else GameStatus.lost
+        if lost:
+            current_game.result.word = secret_word
+
+    db.commit()
+    db.refresh(current_game)
+
+    # Build response
+    guesses_list = [GuessRead.model_validate(guess) for guess in current_game.guesses]
+    
+    response = {
+        "guesses": [guess.model_dump() for guess in guesses_list],
+        "word_length": len(secret_word),
+        "won": won,
+        "lost": lost,
+    }
+
+    if lost:
+        response["word"] = secret_word
+
+    # Auto-start new game if this one ended
+    if won or lost:
+        try:
+            create_current_game_for_player(existing_player, db)
+        except HTTPException:
+            # No more words available, that's ok
+            pass
+
+    return response
