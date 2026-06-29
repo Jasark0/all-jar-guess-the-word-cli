@@ -4,9 +4,10 @@ import login_service
 import register_service
 import guess_service
 import board_service
+import leaderboard_service
 import logout_service
 
-from session_service import load_player_session 
+from session_service import load_player_session
 from utils import load_players, parse_args
 
 async def main():
@@ -23,7 +24,7 @@ async def main():
     elif args.command == "board":
         await board_service.call_board_api(load_player_session())
     elif args.command == "leaderboard":
-        pass
+        leaderboard_service.call_leaderboard_api()
     elif args.command == "logout":
         await logout_service.logout()
 

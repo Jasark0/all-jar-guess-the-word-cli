@@ -1,4 +1,10 @@
+import sys
+
+import httpx
+
 from models import Player
+
+LEADERBOARD_URL = "http://localhost:8000/leaderboard"
 
 
 def get_leaderboard_data(registered_players: list[Player]) -> dict:
@@ -20,19 +26,40 @@ def get_leaderboard_data(registered_players: list[Player]) -> dict:
     return {"players": players}
 
 
-def leaderboard(registered_players: list[Player]):
+def call_leaderboard_api():
     """
-    Sorts the players by wins and prints the leaderboard.
+    Calls GET /leaderboard and prints the leaderboard for the CLI user.
+    """
+    try:
+        response = httpx.get(LEADERBOARD_URL)
+        response.raise_for_status()
+        players = response.json().get("players", [])
+    except (httpx.HTTPError, ValueError):
+        print("Looks like the wurdal servers are taking a loss... try again later!")
+        sys.exit(1)
 
-    :param registered_players: a list of Player objects *
+    display_leaderboard(players)
+
+
+def display_leaderboard(players: list[dict]):
+    """
+    Prints the leaderboard from API player data already sorted by wins.
+
+    :param players: a list of player dicts with name, wins, losses and
+        averageGuesses keys *
     """
     print("Leaderboard\n")
-    sorted_players = player_sort(registered_players)
-    if len(sorted_players) == 0:
-        print("No players registered yet.")
-    else:
-        for i, player in enumerate(sorted_players):
-            print(f"{i + 1}. {player.name} - wins: {player.record.wins}")
+    if len(players) == 0:
+        print("No players on the leaderboard yet. Be the first to register!")
+        return
+
+    for i, player in enumerate(players):
+        print(
+            f"{i + 1}. {player['name']} - "
+            f"wins: {player['wins']}, "
+            f"losses: {player['losses']}, "
+            f"average guesses: {player['averageGuesses']}"
+        )
 
 
 def player_sort(registered_players: list[Player]):
