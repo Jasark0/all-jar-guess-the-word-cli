@@ -32,11 +32,12 @@ def call_leaderboard_api():
     """
     try:
         response = httpx.get(LEADERBOARD_URL)
-    except httpx.ConnectError:
+        response.raise_for_status()
+        players = response.json().get("players", [])
+    except (httpx.HTTPError, ValueError):
         print("Looks like the wurdal servers are taking a loss... try again later!")
         sys.exit(1)
 
-    players = response.json().get("players", [])
     display_leaderboard(players)
 
 

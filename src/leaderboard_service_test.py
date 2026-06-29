@@ -52,6 +52,7 @@ def test_call_leaderboard_api_displays_players(monkeypatch, capsys):
                     {"name": "Tom", "wins": 3, "losses": 12, "averageGuesses": 4.2},
                 ]
             },
+            request=httpx.Request("GET", url),
         )
 
     monkeypatch.setattr("leaderboard_service.httpx.get", fake_get)
@@ -66,13 +67,30 @@ def test_call_leaderboard_api_displays_players(monkeypatch, capsys):
 def test_call_leaderboard_api_empty(monkeypatch, capsys):
     monkeypatch.setattr(
         "leaderboard_service.httpx.get",
-        lambda url: httpx.Response(200, json={"players": []}),
+        lambda url: httpx.Response(
+            200, json={"players": []}, request=httpx.Request("GET", url)
+        ),
     )
 
     call_leaderboard_api()
     out = capsys.readouterr().out
 
     assert "No players on the leaderboard yet. Be the first to register!" in out
+
+
+def test_call_leaderboard_api_server_error(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "leaderboard_service.httpx.get",
+        lambda url: httpx.Response(
+            500, text="Internal Server Error", request=httpx.Request("GET", url)
+        ),
+    )
+
+    with pytest.raises(SystemExit):
+        call_leaderboard_api()
+
+    out = capsys.readouterr().out
+    assert "Looks like the wurdal servers are taking a loss... try again later!" in out
 
 
 def test_call_leaderboard_api_server_down(monkeypatch, capsys):
