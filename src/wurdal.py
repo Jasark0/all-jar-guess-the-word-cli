@@ -3,7 +3,7 @@ import asyncio
 import register_service
 import board_service
 import guess_service
-from utils import load_players, parse_args
+from utils import load_players, parse_args, write_players
 
 
 async def main():
