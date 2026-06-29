@@ -151,8 +151,24 @@ def test_load_players_invalid_json_prints_error(monkeypatch, capsys):
 
     result = utils.load_players()
 
-    assert result is None
+    assert result == []
     assert "Error: Invalid Json" in capsys.readouterr().out
+
+
+def test_load_players_empty_file_returns_empty_list(monkeypatch):
+    class FakeFile:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self):
+            return "   \n"
+
+    monkeypatch.setattr("builtins.open", lambda *_a, **_k: FakeFile())
+
+    assert utils.load_players() == []
 
 
 def test_find_player_returns_index_and_player(player_factory):

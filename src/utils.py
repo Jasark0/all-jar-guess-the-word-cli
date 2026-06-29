@@ -74,6 +74,8 @@ def load_players():
         json_data = ""
         with open("../players.json", "r", encoding="utf-8") as f:
             json_data = f.read()
+        if not json_data.strip():
+            return TypeAdapter(list[Player]).validate_json("[]")
         return TypeAdapter(list[Player]).validate_json(json_data)
     except FileNotFoundError:
         with open("../players.json", "w") as f:
@@ -81,6 +83,7 @@ def load_players():
         return TypeAdapter(list[Player]).validate_json("[]")
     except ValidationError:
         print("Error: Invalid Json")
+        return TypeAdapter(list[Player]).validate_json("[]")
 
 
 def write_players(registered_players: list[Player]):
