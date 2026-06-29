@@ -30,5 +30,5 @@ POST http://localhost:8000/players/sessions
 Content-Type: application/json
 
 {
-    "name": "Jeff"
+    "name": "Jared"
 }

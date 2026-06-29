@@ -1,6 +1,6 @@
 import sys
 from models import Player, Guess
-from board_service import print_board
+# from board_service import print_board
 from utils import player_to_list, find_player
 
 def guess(player_name: str, guess_string: str, registered_players: list[Player]):
@@ -74,7 +74,7 @@ def guess(player_name: str, guess_string: str, registered_players: list[Player])
     new_guess = Guess(guess=guess_string, colors=colors)
     player.current_word.guesses.append(new_guess)
     player = player_to_list(player, idx, registered_players)
-    print_board(player)
+    # print_board(player)
 
     if win:
         print(f"{player.name} solved it in {len(player.current_word.guesses)} guesses!")

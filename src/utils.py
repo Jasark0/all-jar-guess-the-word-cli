@@ -54,10 +54,9 @@ def parse_args():
     guess_parser.add_argument("player_name", metavar="player-name")
     guess_parser.add_argument("word")
 
-    board_parser = subparsers.add_parser(
+    subparsers.add_parser(
         "board", help="Board", usage="%(prog)s <player-name>"
     )
-    board_parser.add_argument("player_name", metavar="player-name")
 
     # wurdal leaderboard [--by-games]
     leaderboard_parser = subparsers.add_parser("leaderboard", help="Show leaderboard")
