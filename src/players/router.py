@@ -276,7 +276,7 @@ def create_current_game_for_player(player: Player, db: Session) -> CurrentGame:
 
 
 @app.get("/{id}/board")
-async def get_player_board(
+def get_player_board(
     id: int,
     authorization: str | None = Header(default=None),
     db: Session = Depends(create_database_session),
