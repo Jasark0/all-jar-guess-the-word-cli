@@ -74,12 +74,12 @@ wurdal guess crane
 
 ## Acceptance Criteria Coverage
 
-✅ **Successful guess with server running** - Board renders with coloring, win/loss messages  
-✅ **Guess fails when server is down** - Friendly error message on connection error  
-✅ **Guess fails when user not logged in** - "Please login to continue" when no session file  
-✅ **Guess with wrong length** - Server sends 400, error printed  
-✅ **Winning guess** - Board shows, "🎉 You won! 🎉" printed, auto-reset  
-✅ **Losing guess** - Board shows, "Game over! The word was WORD." printed, auto-reset
+**Successful guess with server running** - Board renders with coloring, win/loss messages  
+**Guess fails when server is down** - Friendly error message on connection error  
+**Guess fails when user not logged in** - "Please login to continue" when no session file  
+**Guess with wrong length** - Server sends 400, error printed  
+**Winning guess** - Board shows, "🎉 You won! 🎉" printed, auto-reset  
+**Losing guess** - Board shows, "Game over! The word was WORD." printed, auto-reset
 
 ## Notes
 

@@ -3,7 +3,7 @@ Guess handler - orchestrates the server-based guess flow.
 """
 
 from . import api_client
-from models import Guess
+from models import Guess, Letter
 from board_service import print_board_line, print_empty_board_line
 
 
@@ -21,7 +21,7 @@ def handle_guess(guess_word):
     
     # Render the board
     for guess_data in guesses:
-        g = Guess(guess=guess_data["guess"], colors=guess_data["colors"])
+        g = Guess(letters=guess_data["letters"])
         print_board_line(g)
     
     # Print empty rows

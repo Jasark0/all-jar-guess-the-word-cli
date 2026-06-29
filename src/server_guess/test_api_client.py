@@ -64,7 +64,7 @@ def test_post_guess_sends_correct_request():
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
-        "guesses": [{"guess": "crane", "colors": {"0": "green", "1": "grey", "2": "grey", "3": "grey", "4": "grey"}}],
+        "guesses": [{"letters": [{"letter": "c", "match": "full"}, {"letter": "r", "match": "none"}, {"letter": "a", "match": "none"}, {"letter": "n", "match": "none"}, {"letter": "e", "match": "none"}]}],
         "word_length": 5,
         "won": False,
         "lost": False,
@@ -82,7 +82,7 @@ def test_post_guess_sends_correct_request():
 
 def test_post_guess_returns_response_on_success():
     expected = {
-        "guesses": [{"guess": "crane", "colors": {"0": "green", "1": "grey", "2": "grey", "3": "grey", "4": "grey"}}],
+        "guesses": [{"letters": [{"letter": "c", "match": "full"}, {"letter": "r", "match": "none"}, {"letter": "a", "match": "none"}, {"letter": "n", "match": "none"}, {"letter": "e", "match": "none"}]}],
         "word_length": 5,
         "won": False,
         "lost": False,
@@ -101,7 +101,7 @@ def test_post_guess_winning_response_includes_won_flag():
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
-        "guesses": [{"guess": "crane", "colors": {str(i): "green" for i in range(5)}}],
+        "guesses": [{"letters": [{"letter": "c", "match": "full"}, {"letter": "r", "match": "full"}, {"letter": "a", "match": "full"}, {"letter": "n", "match": "full"}, {"letter": "e", "match": "full"}]}],
         "word_length": 5,
         "won": True,
         "lost": False,
@@ -117,7 +117,7 @@ def test_post_guess_losing_response_includes_word():
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
-        "guesses": [{"guess": "zzzzz", "colors": {str(i): "grey" for i in range(5)}}],
+        "guesses": [{"letters": [{"letter": "z", "match": "none"}, {"letter": "z", "match": "none"}, {"letter": "z", "match": "none"}, {"letter": "z", "match": "none"}, {"letter": "z", "match": "none"}]}],
         "word_length": 5,
         "won": False,
         "lost": True,

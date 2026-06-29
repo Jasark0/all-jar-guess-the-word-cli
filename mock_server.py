@@ -66,7 +66,16 @@ def make_guess(player_id):
         return jsonify({"error": "Guess must contain only letters"}), 400
 
     colors = _color_guess(guess, secret_word)
-    game['guesses'].append({"guess": guess, "colors": colors})
+    
+    # Convert to new format: list of Letter objects
+    # Map color names to match types
+    color_to_match = {"green": "full", "yellow": "partial", "grey": "none"}
+    letters = [
+        {"letter": guess[i], "match": color_to_match.get(colors[str(i)], "none")}
+        for i in range(len(guess))
+    ]
+    
+    game['guesses'].append({"letters": letters})
 
     won = guess == secret_word
     lost = not won and len(game['guesses']) >= 6
