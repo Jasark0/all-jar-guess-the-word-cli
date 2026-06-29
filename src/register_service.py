@@ -1,5 +1,6 @@
 import sys
 import httpx
+import board_service
 from board_service import print_board_line, print_empty_board_line
 from models import GuessList
 from session_service import save_player_session, load_player_session
@@ -32,7 +33,7 @@ def print_board_from_response(board_payload: dict):
         print_empty_board_line(length)
 
 
-def register(player_name: str):
+async def register(player_name: str):
     player_name = str.lower(player_name).strip()
     
     try:
@@ -48,15 +49,8 @@ def register(player_name: str):
             player_id = player_data.get("id")
             if isinstance(player_id, int):
                 save_player_session(player_id)
-                board_response = httpx.get(
-                    f"http://localhost:8000/players/{player_id}/board",
-                    headers={"Authorization": f"Bearer {load_player_session()}"},
-                )
-                if board_response.status_code != 200:
-                    print("Unable to load board right now.")
-                    return
-
-                print_board_from_response(board_response.json())
+                await board_service.call_board_api(load_player_session())
+                
         elif response.status_code == 422:
             error_detail = response.json()
             error_msg = error_detail.get("detail", {}).get("error", {}).get("description", "Invalid player name")

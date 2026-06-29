@@ -12,7 +12,7 @@ async def main():
     args = parse_args()
 
     if args.command == "register":
-        register_service.register(args.player_name)
+        await register_service.register(args.player_name)
     elif args.command == "login":
         # TODO: hook up login function so that it calls created api
         pass
