@@ -3,6 +3,7 @@ import asyncio
 import register_service
 import board_service
 import guess_service
+import leaderboard_service
 from utils import load_players, parse_args
 
 
@@ -22,7 +23,7 @@ async def main():
         # TODO: fix this to work with login and session functionality
         await board_service.call_board_api(1)
     elif args.command == "leaderboard":
-        pass
+        leaderboard_service.call_leaderboard_api()
 
 
 if __name__ == "__main__":
