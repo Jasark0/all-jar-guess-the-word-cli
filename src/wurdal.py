@@ -2,11 +2,13 @@
 import asyncio
 import login_service
 import register_service
-import board_service
 import guess_service
+import board_service
 import leaderboard_service
-from utils import load_players, parse_args
+import logout_service
 
+from session_service import load_player_session
+from utils import load_players, parse_args
 
 async def main():
     registered_players = load_players()
@@ -16,15 +18,15 @@ async def main():
     if args.command == "register":
         await register_service.register(args.player_name)
     elif args.command == "login":
-        # TODO: hook up login function so that it calls created api
         await login_service.login(args.player_name)
     elif args.command == "guess":
         guess_service.guess(args.player_name, args.word, registered_players)
     elif args.command == "board":
-        # TODO: fix this to work with login and session functionality
-        await board_service.call_board_api(1)
+        await board_service.call_board_api(load_player_session())
     elif args.command == "leaderboard":
         leaderboard_service.call_leaderboard_api()
+    elif args.command == "logout":
+        await logout_service.logout()
 
 
 if __name__ == "__main__":
