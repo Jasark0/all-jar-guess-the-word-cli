@@ -245,8 +245,14 @@ def access_denied_response() -> JSONResponse:
 def create_current_game_for_player(player: Player, db: Session) -> CurrentGame:
     words_path = Path(__file__).resolve().parent.parent / "word_list.txt"
 
-    with words_path.open() as words_file:
-        words = [line.strip().lower() for line in words_file if line.strip()]
+    try:
+        with words_path.open() as words_file:
+            words = [line.strip().lower() for line in words_file if line.strip()]
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail={"error": {"description": "Word list not found"}},
+        ) from exc
 
     seen_words = player.seen_words or []
     unseen_words = [word for word in words if word not in seen_words]
