@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from .players.router import app as players_router
 from .core.database import Base, engine
