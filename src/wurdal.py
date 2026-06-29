@@ -19,7 +19,6 @@ async def main():
     elif args.command == "guess":
         pass
     elif args.command == "board":
-        # TODO: fix this to work with login and session functionality
         await board_service.call_board_api(load_player_session())
     elif args.command == "leaderboard":
         pass

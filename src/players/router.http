@@ -30,6 +30,14 @@ Content-Type: application/json
 }
 
 ###
+POST http://localhost:8000/players
+Content-Type: application/json
+
+{
+    "name": "Tommy"
+}
+
+###
 POST http://localhost:8000/players/sessions
 Content-Type: application/json
 

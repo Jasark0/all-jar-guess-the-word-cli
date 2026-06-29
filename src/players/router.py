@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, relationship
 from sqlalchemy import Column, Enum as SAEnum, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 from ..core.database import create_database_session, Base
@@ -135,7 +135,7 @@ class PlayerIdentityRead(BaseModel):
     id: int
     name: str
     seen_words: list[str]
-
+    links: dict[str, dict[str, str]] | None = Field(default=None, alias="_links")
 
 class LetterRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -195,7 +195,7 @@ PlayerRead.model_rebuild()
 @app.post("", response_model=PlayerIdentityRead, status_code=201)
 def create_player(
     player: PlayerRegister, db: Session = Depends(create_database_session)
-):
+) -> PlayerIdentityRead:
     if not player.name.strip():
         raise HTTPException(
             status_code=422, detail={"error": {"description": "Name is required"}}
@@ -221,7 +221,17 @@ def create_player(
     db.commit()
     db.refresh(db_player)
 
-    return db_player
+    _links = {
+            "board": {"href": f"/players/{db_player.id}/board"},
+            "guess": {"href": f"/players/{db_player.id}/guess"}
+    }
+
+    return PlayerIdentityRead(
+        id=db_player.id,
+        name=db_player.name,
+        seen_words=db_player.seen_words,
+        links=_links,
+    )
 
 
 @app.post("/sessions", response_model=PlayerIdentityRead, status_code=200)
